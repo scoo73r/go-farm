@@ -58,6 +58,7 @@ func update() {
 	cam.Target = rl.NewVector2(float32(playerDest.X-(playerDest.Width/2)), float32(playerDest.Y-(playerDest.Height)))
 }
 func render() {
+	rl.NewVector2(float32(playerDest.X-(playerDest.Width/2)), float32(playerDest.Y-(playerDest.Height)))
 	rl.BeginDrawing()
 	rl.ClearBackground(bkgColor)
 	rl.BeginMode2D(cam)
@@ -82,8 +83,13 @@ func init() {
 	musicPaused = false
 	rl.PlayMusicStream(music)
 
-	cam = rl.NewCamera2D(rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
-		rl.NewVector2(float32(playerDest.X-(playerDest.Width/2)), float32(playerDest.Y-(playerDest.Height))), 0.0, 1.0)
+	cam = rl.NewCamera2D(
+		rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
+		rl.NewVector2(
+			float32(playerDest.X-(playerDest.Width/2)),
+			float32(playerDest.Y-(playerDest.Height))),
+		0.0,
+		1.0)
 }
 
 func quit() {
