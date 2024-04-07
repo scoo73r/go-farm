@@ -1,6 +1,13 @@
 package main
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 const (
 	screenWidth  = 1000
@@ -8,9 +15,12 @@ const (
 )
 
 var (
-	running      = true
-	bkgColor     = rl.NewColor(147, 211, 196, 255)
-	grassSprite  rl.Texture2D
+	running  = true
+	bkgColor = rl.NewColor(147, 211, 196, 255)
+
+	grassSprite rl.Texture2D
+	tex         rl.Texture2D
+
 	playerSprite rl.Texture2D
 
 	playerSrc                                     rl.Rectangle
@@ -22,6 +32,12 @@ var (
 
 	frameCount int
 
+	tileDest   rl.Rectangle
+	tileSrc    rl.Rectangle
+	tileMap    []int
+	srcMap     []string
+	mapW, mapH int
+
 	playerSpeed float32 = 3
 	musicPaused bool
 	music       rl.Music
@@ -29,7 +45,20 @@ var (
 )
 
 func drawscene() {
-	rl.DrawTexture(grassSprite, 100, 50, rl.White)
+	//rl.DrawTexture(grassSprite, 100, 50, rl.White)
+	for i := 0; i < len(tileMap); i++ {
+		if tileMap[i] != 0 {
+			tileDest.X = tileDest.Width * float32(i%mapW)
+			tileDest.Y = tileDest.Height * float32(i/mapW)
+			if srcMap[i] == "g" {
+				tex = grassSprite
+			}
+
+			tileSrc.X = tileSrc.Width * float32((tileMap[i]-1)%int(tex.Width/int32(tileSrc.Width)))
+			tileSrc.Y = tileSrc.Height * float32((tileMap[i]-1)/int(tex.Width/int32(tileSrc.Width)))
+			rl.DrawTexturePro(tex, tileSrc, tileDest, rl.NewVector2(tileDest.Width, tileDest.Height), 0, rl.White)
+		}
+	}
 	rl.DrawTexturePro(playerSprite, playerSrc, playerDest, rl.NewVector2(playerDest.Width, playerDest.Height), 0, rl.White)
 }
 
@@ -55,15 +84,14 @@ func input() {
 		playerRight = true
 	}
 	if rl.IsKeyPressed(rl.KeyP) {
-		musicPaused = !musicPaused
+		//	musicPaused = !musicPaused
 	}
 }
 
 func update() {
 	running = !rl.WindowShouldClose()
 
-	playerSrc.X = 0
-
+	playerSrc.X = playerSrc.Width * float32(playerFrame)
 	if playerMoving {
 		if playerUp {
 			playerDest.Y -= playerSpeed
@@ -81,14 +109,19 @@ func update() {
 			playerFrame++
 		}
 
-		playerSrc.X = playerSrc.Width * float32(playerFrame)
+	} else if frameCount%45 == 1 {
+		playerFrame++
 	}
-	rl.UpdateMusicStream(music)
+
+	//rl.UpdateMusicStream(music)
 	frameCount++
 	if playerFrame > 3 {
 		playerFrame = 0
 	}
-
+	if !playerMoving && playerFrame > 1 {
+		playerFrame = 0
+	}
+	playerSrc.X = playerSrc.Width * float32(playerFrame)
 	playerSrc.Y = playerSrc.Height * float32(playerDir)
 	if musicPaused {
 		rl.PauseMusicStream(music)
@@ -109,21 +142,52 @@ func render() {
 	rl.EndMode2D()
 	rl.EndDrawing()
 }
+func loadMap(mapFile string) {
+	file, err := os.ReadFile(mapFile)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	remNewLines := strings.Replace(string(file), "\n", " ", -1)
+	sliced := strings.Split(remNewLines, " ")
 
+	mapW = -1
+	mapH = -1
+
+	for i := 0; i < len(sliced); i++ {
+		s, _ := strconv.ParseInt(sliced[i], 10, 64)
+		m := int(s)
+		if mapW == -1 {
+			mapW = m
+		} else if mapH == -1 {
+			mapH = m
+		} else if i < mapH*mapW+2 {
+			tileMap = append(tileMap, m)
+		} else {
+			srcMap = append(srcMap, sliced[i])
+		}
+	}
+	if len(tileMap) > mapW*mapH {
+		tileMap = tileMap[:len(tileMap)-1]
+	}
+
+}
 func init() {
 	rl.InitWindow(screenWidth, screenHeight, "go-farm")
 	rl.SetExitKey(0)
 	rl.SetTargetFPS(60)
 
 	grassSprite = rl.LoadTexture("Sprites/Tilesets/Grass.png")
+	tileDest = rl.NewRectangle(0, 0, 16, 16)
+	tileSrc = rl.NewRectangle(0, 0, 16, 16)
 	playerSprite = rl.LoadTexture("Sprites/Characters/BasicCharacterSpritesheet.png")
 
 	playerSrc = rl.NewRectangle(0, 0, 48, 48)
 	playerDest = rl.NewRectangle(200, 200, 100, 100)
 
-	rl.InitAudioDevice()
-	music = rl.LoadMusicStream("audio/tap-room-rag-small.mp3")
-	musicPaused = false
+	//rl.InitAudioDevice()
+	//music = rl.LoadMusicStream("audio/tap-room-rag-small.mp3")
+	musicPaused = true
 	//	rl.PlayMusicStream(music)
 
 	cam = rl.NewCamera2D(
@@ -132,7 +196,8 @@ func init() {
 			float32(playerDest.X-(playerDest.Width/2)),
 			float32(playerDest.Y-(playerDest.Height))),
 		0.0,
-		2.0)
+		1.0)
+	loadMap("one.map")
 }
 
 func quit() {
