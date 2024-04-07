@@ -78,7 +78,7 @@ func init() {
 	playerDest = rl.NewRectangle(200, 200, 100, 100)
 
 	rl.InitAudioDevice()
-	music = rl.LoadMusicStream("audio/tap-room-rag.mp3")
+	music = rl.LoadMusicStream("audio/tap-room-rag-small.mp3")
 	musicPaused = false
 	rl.PlayMusicStream(music)
 
