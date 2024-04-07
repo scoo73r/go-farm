@@ -1,2 +1,5 @@
 Session.vim
 Sprites/*
+*.exe
+*.sum
+audio/*
