@@ -4,7 +4,7 @@ import rl "github.com/gen2brain/raylib-go/raylib"
 
 const (
 	screenWidth  = 1000
-	screenHeight = 480
+	screenHeight = 1000
 )
 
 var (
@@ -13,8 +13,14 @@ var (
 	grassSprite  rl.Texture2D
 	playerSprite rl.Texture2D
 
-	playerSrc  rl.Rectangle
-	playerDest rl.Rectangle
+	playerSrc                                     rl.Rectangle
+	playerDest                                    rl.Rectangle
+	playerMoving                                  bool
+	playerDir                                     int
+	playerUp, playerDown, playerRight, playerLeft bool
+	playerFrame                                   int
+
+	frameCount int
 
 	playerSpeed float32 = 3
 	musicPaused bool
@@ -29,16 +35,24 @@ func drawscene() {
 
 func input() {
 	if rl.IsKeyDown(rl.KeyE) || rl.IsKeyDown(rl.KeyUp) {
-		playerDest.Y -= playerSpeed
+		playerMoving = true
+		playerDir = 1
+		playerUp = true
 	}
 	if rl.IsKeyDown(rl.KeyD) || rl.IsKeyDown(rl.KeyDown) {
-		playerDest.Y += playerSpeed
+		playerMoving = true
+		playerDir = 0
+		playerDown = true
 	}
 	if rl.IsKeyDown(rl.KeyS) || rl.IsKeyDown(rl.KeyLeft) {
-		playerDest.X -= playerSpeed
+		playerMoving = true
+		playerDir = 2
+		playerLeft = true
 	}
 	if rl.IsKeyDown(rl.KeyF) || rl.IsKeyDown(rl.KeyRight) {
-		playerDest.X += playerSpeed
+		playerMoving = true
+		playerDir = 3
+		playerRight = true
 	}
 	if rl.IsKeyPressed(rl.KeyP) {
 		musicPaused = !musicPaused
@@ -48,7 +62,34 @@ func input() {
 func update() {
 	running = !rl.WindowShouldClose()
 
+	playerSrc.X = 0
+
+	if playerMoving {
+		if playerUp {
+			playerDest.Y -= playerSpeed
+		}
+		if playerDown {
+			playerDest.Y += playerSpeed
+		}
+		if playerLeft {
+			playerDest.X -= playerSpeed
+		}
+		if playerRight {
+			playerDest.X += playerSpeed
+		}
+		if frameCount%8 == 1 {
+			playerFrame++
+		}
+
+		playerSrc.X = playerSrc.Width * float32(playerFrame)
+	}
 	rl.UpdateMusicStream(music)
+	frameCount++
+	if playerFrame > 3 {
+		playerFrame = 0
+	}
+
+	playerSrc.Y = playerSrc.Height * float32(playerDir)
 	if musicPaused {
 		rl.PauseMusicStream(music)
 	} else {
@@ -56,6 +97,8 @@ func update() {
 	}
 
 	cam.Target = rl.NewVector2(float32(playerDest.X-(playerDest.Width/2)), float32(playerDest.Y-(playerDest.Height)))
+	playerMoving = false
+	playerUp, playerDown, playerRight, playerLeft = false, false, false, false
 }
 func render() {
 	rl.NewVector2(float32(playerDest.X-(playerDest.Width/2)), float32(playerDest.Y-(playerDest.Height)))
@@ -81,7 +124,7 @@ func init() {
 	rl.InitAudioDevice()
 	music = rl.LoadMusicStream("audio/tap-room-rag-small.mp3")
 	musicPaused = false
-	rl.PlayMusicStream(music)
+	//	rl.PlayMusicStream(music)
 
 	cam = rl.NewCamera2D(
 		rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
@@ -89,7 +132,7 @@ func init() {
 			float32(playerDest.X-(playerDest.Width/2)),
 			float32(playerDest.Y-(playerDest.Height))),
 		0.0,
-		1.0)
+		2.0)
 }
 
 func quit() {
